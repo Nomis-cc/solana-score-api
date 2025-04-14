@@ -12,18 +12,17 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 export class UmiService {
   constructor(private configService: ConfigService) {}
 
-  private getKeypairSigner(umi: Umi, privateKeyHex: string) {
-    const privateKey = Uint8Array.from(Buffer.from(privateKeyHex, 'hex'));
-    const keypair = umi.eddsa.createKeypairFromSecretKey(privateKey);
-    return createSignerFromKeypair(umi, keypair);
-  }
-
-  getUmi(privateKeyHex?: string): Umi {
+  getUmi(privateKey?: string): Umi {
     const network = this.configService.get<string>('NETWORK') as Cluster;
     const umi = createUmi(clusterApiUrl(network));
 
-    if (privateKeyHex) {
-      const signer = this.getKeypairSigner(umi, privateKeyHex);
+    if (privateKey) {
+      const keypair = umi.eddsa.createKeypairFromSecretKey(
+        Uint8Array.from(JSON.parse(privateKey) as number[]),
+      );
+
+      const signer = createSignerFromKeypair(umi, keypair);
+
       umi.use(signerIdentity(signer));
     }
 

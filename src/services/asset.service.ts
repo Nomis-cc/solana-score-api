@@ -25,12 +25,16 @@ import { SignDto } from '../dtos/asset.dto';
 @Injectable()
 export class AssetService {
   private readonly adminPrivateKey: string;
+  private readonly merchantPublicKey: string;
 
   constructor(
     private configService: ConfigService,
     private umiService: UmiService,
   ) {
     this.adminPrivateKey = this.configService.get<string>('ADMIN_PRIVATE_KEY');
+    this.merchantPublicKey = this.configService.get<string>(
+      'MERCHANT_PUBLIC_KEY',
+    );
   }
 
   private async getAsset(userPublicKey: string, collectionPublicKey: string) {
@@ -112,7 +116,7 @@ export class AssetService {
       txs.push(
         transferSol(umi, {
           source: createNoopSigner(userPublicKey),
-          destination: publicKey(umi.identity),
+          destination: publicKey(this.merchantPublicKey),
           amount: lamports(asset ? updateAmount : createAmount),
         }),
       );

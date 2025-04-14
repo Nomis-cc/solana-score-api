@@ -13,6 +13,7 @@ import { AssetService } from './services/asset.service';
       validationSchema: Joi.object({
         AUTH_SECRET_KEY: Joi.string().required(),
         ADMIN_PRIVATE_KEY: Joi.string().required(),
+        MERCHANT_PUBLIC_KEY: Joi.string().required(),
         NETWORK: Joi.string()
           .valid('mainnet-beta', 'devnet', 'testnet')
           .empty('')
