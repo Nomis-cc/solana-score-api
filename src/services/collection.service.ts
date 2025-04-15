@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   generateSigner,
   publicKey,
-  TransactionBuilder,
 } from '@metaplex-foundation/umi';
 import {
   createCollection,
