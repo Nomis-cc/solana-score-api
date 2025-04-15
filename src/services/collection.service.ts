@@ -1,13 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { generateSigner, publicKey } from '@metaplex-foundation/umi';
 import {
+  AssetV1,
+  CollectionV1,
   createCollection,
   fetchCollection,
   updateCollection,
+  updateCollectionPlugin,
 } from '@metaplex-foundation/mpl-core';
 import { ConfigService } from '@nestjs/config';
 import { UmiService } from './umi.service';
 import { CollectionDto } from '../dtos/collection.dto';
+import { stringifyWithBigInt } from '../tools/stringify-with-big-int';
 
 @Injectable()
 export class CollectionService {
@@ -23,7 +27,8 @@ export class CollectionService {
   async get(address: string) {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
-      return await fetchCollection(umi, publicKey(address));
+      const collection = await fetchCollection(umi, publicKey(address));
+      return JSON.parse(stringifyWithBigInt(collection)) as CollectionV1;
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
@@ -41,7 +46,17 @@ export class CollectionService {
 
       const tx = address
         ? updateCollection(umi, { name, uri, collection: collectionPublicKey })
-        : createCollection(umi, { name, uri, collection: signer });
+        : createCollection(umi, {
+            name,
+            uri,
+            collection: signer,
+            plugins: [
+              {
+                type: 'PermanentFreezeDelegate',
+                frozen: true,
+              },
+            ],
+          });
 
       await tx.sendAndConfirm(umi);
 

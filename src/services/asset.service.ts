@@ -8,7 +8,7 @@ import {
   TransactionBuilder,
 } from '@metaplex-foundation/umi';
 import {
-  addPlugin,
+  AssetV1,
   create,
   fetchAssetsByOwner,
   fetchCollection,
@@ -21,6 +21,7 @@ import { base64, base58 } from '@metaplex-foundation/umi/serializers';
 import { ConfigService } from '@nestjs/config';
 import { UmiService } from './umi.service';
 import { SignDto } from '../dtos/asset.dto';
+import { stringifyWithBigInt } from '../tools/stringify-with-big-int';
 
 @Injectable()
 export class AssetService {
@@ -104,11 +105,7 @@ export class AssetService {
             ...sbtData,
             asset: assetSigner,
             owner: userPublicKey,
-          }),
-          addPlugin(umi, {
-            asset: publicKey(assetSigner),
-            collection: publicKey(collectionPublicKey),
-            plugin,
+            plugins: [plugin],
           }),
         );
       }
@@ -153,7 +150,8 @@ export class AssetService {
     try {
       const asset = await this.getAsset(userPublicKey, collectionPublicKey);
       if (!asset) throw new Error('Not found');
-      return asset;
+
+      return JSON.parse(stringifyWithBigInt(asset)) as AssetV1;
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }

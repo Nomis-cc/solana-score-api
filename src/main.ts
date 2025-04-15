@@ -5,12 +5,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AuthGuard } from './guards/auth.guard';
 import { ConfigService } from '@nestjs/config';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-BigInt.prototype.toJSON = function () {
-  return String(this);
-};
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
