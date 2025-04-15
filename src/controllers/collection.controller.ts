@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CollectionService } from '../services/collection.service';
 import { CollectionDto } from '../dtos/collection.dto';
 

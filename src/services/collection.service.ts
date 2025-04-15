@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { generateSigner, publicKey } from '@metaplex-foundation/umi';
 import {
-  AssetV1,
   CollectionV1,
   createCollection,
   fetchCollection,
   updateCollection,
-  updateCollectionPlugin,
 } from '@metaplex-foundation/mpl-core';
 import { ConfigService } from '@nestjs/config';
 import { UmiService } from './umi.service';
