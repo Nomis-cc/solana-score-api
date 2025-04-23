@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CollectionService } from '../services/collection.service';
 import { CollectionDto } from '../dtos/collection.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller({
   path: 'collection',
 })
+@ApiBearerAuth()
 export class CollectionController {
   constructor(private readonly collectionService: CollectionService) {}
 

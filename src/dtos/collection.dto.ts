@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty } from 'class-validator';
 
 export class CollectionDto {
   @IsNotEmpty()
@@ -6,7 +6,4 @@ export class CollectionDto {
 
   @IsNotEmpty()
   metadataUrl: string;
-
-  @IsOptional()
-  address?: string;
 }

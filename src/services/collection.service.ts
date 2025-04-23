@@ -58,7 +58,8 @@ export class CollectionService {
 
       await tx.sendAndConfirm(umi);
 
-      return await fetchCollection(umi, collectionPublicKey);
+      const collection = await fetchCollection(umi, collectionPublicKey);
+      return JSON.parse(stringifyWithBigInt(collection)) as CollectionV1;
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
