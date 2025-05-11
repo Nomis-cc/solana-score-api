@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsUrl, Max, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Max,
+  Min,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class AssetDto {
@@ -28,6 +35,10 @@ export class SignDto {
   @IsNotEmpty()
   name: string;
 
+  @IsString()
+  @IsOptional()
+  referrer: string;
+
   @IsNotEmpty()
   @Transform(({ value }) => BigInt(value as string))
   createAmount: bigint;
@@ -35,6 +46,10 @@ export class SignDto {
   @IsNotEmpty()
   @Transform(({ value }) => BigInt(value as string))
   updateAmount: bigint;
+
+  @IsNotEmpty()
+  @Transform(({ value }) => BigInt(value as string))
+  refAmount: bigint;
 }
 
 export class SignByUserDto {

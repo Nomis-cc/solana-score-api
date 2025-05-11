@@ -63,10 +63,13 @@ export class AssetService {
       score,
       createAmount,
       updateAmount,
+      referrer,
+      refAmount,
     } = body;
 
     try {
       const userPublicKey = publicKey(address);
+      const referrerPublicKey = referrer ? publicKey(referrer) : null;
       const umi = this.umiService.getUmi(this.adminPrivateKey);
       const collection = await fetchCollection(umi, collectionPublicKey);
       const asset = await this.getAsset(userPublicKey, collectionPublicKey);
@@ -108,15 +111,29 @@ export class AssetService {
             plugins: [plugin],
           }),
         );
+
+        if (referrerPublicKey && refAmount) {
+          txs.push(
+            transferSol(umi, {
+              source: createNoopSigner(userPublicKey),
+              destination: publicKey(referrer),
+              amount: lamports(refAmount),
+            }),
+          );
+        }
       }
 
-      txs.push(
-        transferSol(umi, {
-          source: createNoopSigner(userPublicKey),
-          destination: publicKey(this.merchantPublicKey),
-          amount: lamports(asset ? updateAmount : createAmount),
-        }),
-      );
+      const totalAmount = (asset ? updateAmount : createAmount) - refAmount;
+
+      if (totalAmount > 0n) {
+        txs.push(
+          transferSol(umi, {
+            source: createNoopSigner(userPublicKey),
+            destination: publicKey(this.merchantPublicKey),
+            amount: lamports(totalAmount),
+          }),
+        );
+      }
 
       const tx = await transactionBuilder()
         .add(txs)
