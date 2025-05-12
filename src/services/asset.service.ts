@@ -123,7 +123,8 @@ export class AssetService {
         }
       }
 
-      const totalAmount = (asset ? updateAmount : createAmount) - refAmount;
+      const totalAmount =
+        (asset ? updateAmount : createAmount) - (refAmount ?? 0n);
 
       if (totalAmount > 0n) {
         txs.push(

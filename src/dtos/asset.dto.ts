@@ -47,7 +47,7 @@ export class SignDto {
   @Transform(({ value }) => BigInt(value as string))
   updateAmount: bigint;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Transform(({ value }) => BigInt(value as string))
   refAmount: bigint;
 }
