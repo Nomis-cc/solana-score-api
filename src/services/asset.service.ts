@@ -115,7 +115,12 @@ export class AssetService {
           }),
         );
 
-        if (referrerPublicKey && refAmount) {
+        if (
+          referrerPublicKey &&
+          referrerPublicKey !== userPublicKey &&
+          refAmount &&
+          createAmount - refAmount > 0n
+        ) {
           txs.push(
             transferSol(umi, {
               source: createNoopSigner(userPublicKey),
