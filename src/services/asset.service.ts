@@ -91,8 +91,11 @@ export class AssetService {
 
       let isUpdate = false;
 
+      let totalAmount: bigint;
+
       if (asset) {
         isUpdate = true;
+        totalAmount = updateAmount;
         txs.push(
           update(umi, {
             ...sbtData,
@@ -121,6 +124,7 @@ export class AssetService {
           refAmount &&
           createAmount - refAmount > 0n
         ) {
+          totalAmount = createAmount - refAmount;
           txs.push(
             transferSol(umi, {
               source: createNoopSigner(userPublicKey),
@@ -130,9 +134,6 @@ export class AssetService {
           );
         }
       }
-
-      const totalAmount =
-        (asset ? updateAmount : createAmount) - (refAmount ?? 0n);
 
       if (totalAmount > 0n) {
         txs.push(
