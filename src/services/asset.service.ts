@@ -117,22 +117,23 @@ export class AssetService {
             plugins: [plugin],
           }),
         );
+      }
 
-        if (
-          referrerPublicKey &&
-          referrerPublicKey !== userPublicKey &&
-          refAmount &&
-          createAmount - refAmount > 0n
-        ) {
-          totalAmount = createAmount - refAmount;
-          txs.push(
-            transferSol(umi, {
-              source: createNoopSigner(userPublicKey),
-              destination: publicKey(referrer),
-              amount: lamports(refAmount),
-            }),
-          );
-        }
+      if (
+        isUpdate &&
+        referrerPublicKey &&
+        referrerPublicKey !== userPublicKey &&
+        refAmount &&
+        createAmount - refAmount > 0n
+      ) {
+        totalAmount = createAmount - refAmount;
+        txs.push(
+          transferSol(umi, {
+            source: createNoopSigner(userPublicKey),
+            destination: publicKey(referrer),
+            amount: lamports(refAmount),
+          }),
+        );
       }
 
       if (totalAmount > 0n) {
