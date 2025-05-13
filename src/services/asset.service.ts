@@ -149,7 +149,9 @@ export class AssetService {
       const tx = await transactionBuilder()
         .add(txs)
         .useV0()
-        .setBlockhash(await umi.rpc.getLatestBlockhash())
+        .setBlockhash(
+          await umi.rpc.getLatestBlockhash({ commitment: 'finalized' }),
+        )
         .buildAndSign(umi);
 
       return {
