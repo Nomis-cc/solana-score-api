@@ -18,8 +18,8 @@ export class AssetController {
 
   @Post('sign')
   async sign(@Body() body: SignDto) {
-    const transaction = await this.assetService.sign(body);
-    return { data: { transaction } };
+    const result = await this.assetService.sign(body);
+    return { data: result };
   }
 
   @Post('sign-by-user')

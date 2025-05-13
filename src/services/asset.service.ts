@@ -89,7 +89,10 @@ export class AssetService {
         attributeList: [{ key: 'score', value: score.toString() }],
       };
 
+      let isUpdate = false;
+
       if (asset) {
+        isUpdate = true;
         txs.push(
           update(umi, {
             ...sbtData,
@@ -142,7 +145,10 @@ export class AssetService {
         .setBlockhash(await umi.rpc.getLatestBlockhash())
         .buildAndSign(umi);
 
-      return base64.deserialize(umi.transactions.serialize(tx))[0];
+      return {
+        transaction: base64.deserialize(umi.transactions.serialize(tx))[0],
+        isUpdate,
+      };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
