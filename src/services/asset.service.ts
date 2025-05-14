@@ -108,6 +108,7 @@ export class AssetService {
           }),
         );
       } else {
+        totalAmount = createAmount;
         const assetSigner = generateSigner(umi);
         txs.push(
           create(umi, {
@@ -120,13 +121,13 @@ export class AssetService {
       }
 
       if (
-        isUpdate &&
+        !isUpdate &&
         referrerPublicKey &&
         referrerPublicKey !== userPublicKey &&
         refAmount &&
-        createAmount - refAmount > 0n
+        totalAmount - refAmount > 0n
       ) {
-        totalAmount = createAmount - refAmount;
+        totalAmount -= refAmount;
         txs.push(
           transferSol(umi, {
             source: createNoopSigner(userPublicKey),
