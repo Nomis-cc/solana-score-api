@@ -58,8 +58,11 @@ export class CollectionService {
 
       await tx.sendAndConfirm(umi);
 
-      const collection = await fetchCollection(umi, collectionPublicKey);
-      return JSON.parse(stringifyWithBigInt(collection)) as CollectionV1;
+      return {
+        address: collectionPublicKey.toString(),
+        name,
+        metadataUrl: uri,
+      };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
