@@ -13,7 +13,8 @@ export class UmiService {
   constructor(private configService: ConfigService) {}
 
   getUmi(privateKey?: string): Umi {
-    const umi = createUmi('https://solana-rpc.publicnode.com');
+    const rpc = this.configService.get<string>('RPC');
+    const umi = createUmi(rpc);
 
     if (privateKey) {
       const keypair = umi.eddsa.createKeypairFromSecretKey(

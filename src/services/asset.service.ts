@@ -150,6 +150,7 @@ export class AssetService {
       const tx = await transactionBuilder()
         .add(txs)
         .useV0()
+        .setFeePayer(createNoopSigner(userPublicKey))
         .setBlockhash(await umi.rpc.getLatestBlockhash())
         .buildAndSign(umi);
 
