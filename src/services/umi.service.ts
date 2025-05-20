@@ -5,7 +5,6 @@ import {
   createSignerFromKeypair,
   signerIdentity,
 } from '@metaplex-foundation/umi';
-import { Cluster, clusterApiUrl } from '@solana/web3.js';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 
 @Injectable()
