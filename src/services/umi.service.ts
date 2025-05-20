@@ -13,8 +13,7 @@ export class UmiService {
   constructor(private configService: ConfigService) {}
 
   getUmi(privateKey?: string): Umi {
-    const network = this.configService.get<string>('NETWORK') as Cluster;
-    const umi = createUmi(clusterApiUrl(network));
+    const umi = createUmi('https://solana-rpc.publicnode.com');
 
     if (privateKey) {
       const keypair = umi.eddsa.createKeypairFromSecretKey(
