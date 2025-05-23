@@ -127,14 +127,20 @@ export class AssetService {
         refAmount &&
         totalAmount - refAmount > 0n
       ) {
-        totalAmount -= refAmount;
-        txs.push(
-          transferSol(umi, {
-            source: createNoopSigner(userPublicKey),
-            destination: publicKey(referrer),
-            amount: lamports(refAmount),
-          }),
+        const referrerAsset = await this.getAsset(
+          userPublicKey,
+          referrerPublicKey,
         );
+        if (referrerAsset) {
+          totalAmount -= refAmount;
+          txs.push(
+            transferSol(umi, {
+              source: createNoopSigner(userPublicKey),
+              destination: publicKey(referrer),
+              amount: lamports(refAmount),
+            }),
+          );
+        }
       }
 
       if (totalAmount > 0n) {
