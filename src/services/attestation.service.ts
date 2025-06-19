@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UmiService } from './umi.service';
 import { ConfigService } from '@nestjs/config';
-
 import {
   CreateCredentialInstruction,
   deriveCredentialPda,
@@ -13,13 +12,13 @@ import {
   Address,
   createSolanaRpc,
 } from '@solana/kit';
-import bs58 from 'bs58';
 import {
   publicKey,
   transactionBuilder,
   TransactionBuilderItemsInput,
 } from '@metaplex-foundation/umi';
 import { SignDto } from '../dtos/attestation.dto';
+import { base58 } from '@metaplex-foundation/umi/serializers';
 
 const NAME = 'Nomis Attestation';
 
@@ -95,7 +94,7 @@ export class AttestationService {
       );
 
       const [credentialPda] = await deriveCredentialPda({
-        authority: bs58.decode(admin.address) as unknown as Address,
+        authority: base58.serialize(admin.address) as unknown as Address,
         name: NAME,
       });
 
@@ -116,7 +115,7 @@ export class AttestationService {
       );
 
       const [credential] = await deriveCredentialPda({
-        authority: bs58.decode(admin.address) as unknown as Address,
+        authority: base58.serialize(admin.address) as unknown as Address,
         name: NAME,
       });
 
