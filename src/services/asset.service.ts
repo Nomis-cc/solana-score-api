@@ -161,7 +161,7 @@ export class AssetService {
         .buildAndSign(umi);
 
       return {
-        transaction: base64.deserialize(umi.transactions.serialize(tx))[0],
+        transaction: this.umiService.getBase64EncodedTransaction(tx),
         isUpdate,
       };
     } catch (error) {
