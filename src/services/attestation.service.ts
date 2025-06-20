@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UmiService } from './umi.service';
 import { ConfigService } from '@nestjs/config';
-import { fetchCredential, fetchSchema } from 'sas-lib';
+import { fetchAttestation, fetchCredential, fetchSchema } from 'sas-lib';
 import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
 
 import {
@@ -28,22 +28,19 @@ export class AttestationService {
   async createCredential() {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
-
       const admin = await this.getAdminSigner();
-
       const credential = await getCredentialPda(admin.address);
 
-      const createCredentialTx = await getCreateCredentialTransaction({
+      const tx = await getCreateCredentialTransaction({
         authority: admin,
         credential,
         payer: admin,
         signers: [admin.address],
-      }).buildAndSign(umi);
-      // .sendAndConfirm(umi);
+      }).sendAndConfirm(umi);
 
       return {
         result: true,
-        tx: this.umiService.getBase64EncodedTransaction(createCredentialTx),
+        transaction: tx.signature,
       };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
@@ -53,23 +50,20 @@ export class AttestationService {
   async createSchema() {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
-
       const admin = await this.getAdminSigner();
-
       const credential = await getCredentialPda(admin.address);
       const schema = await getSchemaPda(credential);
 
-      const createSchemaTx = await getCreateSchemaTransaction({
+      const tx = await getCreateSchemaTransaction({
         payer: admin,
         authority: admin,
         credential,
         schema,
-      }).buildAndSign(umi);
-      // .sendAndConfirm(umi);
+      }).sendAndConfirm(umi);
 
       return {
         result: true,
-        tx: this.umiService.getBase64EncodedTransaction(createSchemaTx),
+        transaction: tx.signature,
       };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
@@ -111,7 +105,6 @@ export class AttestationService {
         transaction: this.umiService.getBase64EncodedTransaction(tx),
       };
     } catch (error) {
-      console.log(error);
       throw new BadRequestException((error as Error).message);
     }
   }
@@ -137,6 +130,27 @@ export class AttestationService {
       const schema = await fetchSchema(rpc, schemaPda);
       return schema.address;
     } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+
+  async getAttestation(address: string) {
+    try {
+      const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
+      const admin = await this.getAdminSigner();
+      const credentialPda = await getCredentialPda(admin.address);
+      const schemaPda = await getSchemaPda(credentialPda);
+      const attestationPda = await getAttestationPda(
+        credentialPda,
+        schemaPda,
+        address,
+      );
+      const attestation = await fetchAttestation(rpc, attestationPda);
+      return {
+        attestation: attestation.address,
+      };
+    } catch (error) {
+      console.error(error);
       throw new BadRequestException((error as Error).message);
     }
   }

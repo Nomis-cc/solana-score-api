@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { AttestationService } from '../services/attestation.service';
 import { CreateAttestationDto } from '../dtos/attestation.dto';
 
@@ -23,6 +23,12 @@ export class AttestationController {
   @Get('schema')
   async getSchema() {
     const schema = await this.attestationService.getSchema();
+    return { data: { schema } };
+  }
+
+  @Get(':address')
+  async getAttestation(@Param('address') address: string) {
+    const schema = await this.attestationService.getAttestation(address);
     return { data: { schema } };
   }
 

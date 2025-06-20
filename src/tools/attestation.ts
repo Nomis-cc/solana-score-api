@@ -5,8 +5,8 @@ import {
   publicKey,
   transactionBuilder,
   TransactionBuilderItemsInput,
-  Signer,
-  createNoopSigner as umiCreateNoopSigner,
+  // Signer,
+  // createNoopSigner as umiCreateNoopSigner,
 } from '@metaplex-foundation/umi';
 
 import {
