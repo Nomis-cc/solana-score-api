@@ -11,23 +11,17 @@ export class AssetController {
   constructor(private readonly assetService: AssetService) {}
 
   @Get()
-  async get(@Query() query: AssetDto) {
-    const asset = await this.assetService.get(query.address, query.collection);
-    return { data: asset };
+  get(@Query() query: AssetDto) {
+    return this.assetService.get(query.address, query.collection);
   }
 
   @Post('sign')
-  async sign(@Body() body: SignDto) {
-    const result = await this.assetService.sign(body);
-    return { data: result };
+  sign(@Body() body: SignDto) {
+    return this.assetService.sign(body);
   }
 
   @Post('sign-by-user')
-  async signByUser(@Body() body: SignByUserDto) {
-    const transactionHash = await this.assetService.signByUser(
-      body.transaction,
-      body.privateKey,
-    );
-    return { data: transactionHash };
+  signByUser(@Body() body: SignByUserDto) {
+    return this.assetService.signByUser(body.transaction, body.privateKey);
   }
 }

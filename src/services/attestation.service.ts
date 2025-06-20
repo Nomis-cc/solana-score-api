@@ -4,15 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { fetchAttestation, fetchCredential, fetchSchema } from 'sas-lib';
 import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
 
-import {
-  getSchemaPda,
-  getCredentialPda,
-  getAttestationPda,
-  getCreateSchemaTransaction,
-  getCreateCredentialTransaction,
-  getCreateAttestationTransaction,
-} from '../tools/attestation';
 import { CreateAttestationDto } from '../dtos/attestation.dto';
+import { SasService } from './sas.service';
 
 @Injectable()
 export class AttestationService {
@@ -21,6 +14,7 @@ export class AttestationService {
   constructor(
     private configService: ConfigService,
     private umiService: UmiService,
+    private sasService: SasService,
   ) {
     this.adminPrivateKey = this.configService.get<string>('ADMIN_PRIVATE_KEY');
   }
@@ -29,18 +23,19 @@ export class AttestationService {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
       const admin = await this.getAdminSigner();
-      const credential = await getCredentialPda(admin.address);
+      const credential = await this.sasService.getCredentialPda(admin.address);
 
-      const tx = await getCreateCredentialTransaction({
-        authority: admin,
-        credential,
-        payer: admin,
-        signers: [admin.address],
-      }).sendAndConfirm(umi);
+      const tx = await this.sasService
+        .getCreateCredentialTransaction({
+          authority: admin,
+          credential,
+          payer: admin,
+          signers: [admin.address],
+        })
+        .sendAndConfirm(umi);
 
       return {
-        result: true,
-        transaction: tx.signature,
+        transactionHash: tx.signature,
       };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
@@ -51,19 +46,20 @@ export class AttestationService {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
       const admin = await this.getAdminSigner();
-      const credential = await getCredentialPda(admin.address);
-      const schema = await getSchemaPda(credential);
+      const credential = await this.sasService.getCredentialPda(admin.address);
+      const schema = await this.sasService.getSchemaPda(credential);
 
-      const tx = await getCreateSchemaTransaction({
-        payer: admin,
-        authority: admin,
-        credential,
-        schema,
-      }).sendAndConfirm(umi);
+      const tx = await this.sasService
+        .getCreateSchemaTransaction({
+          payer: admin,
+          authority: admin,
+          credential,
+          schema,
+        })
+        .sendAndConfirm(umi);
 
       return {
-        result: true,
-        transaction: tx.signature,
+        transactionHash: tx.signature,
       };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
@@ -78,24 +74,29 @@ export class AttestationService {
 
       const admin = await this.getAdminSigner();
 
-      const credential = await getCredentialPda(admin.address);
-      const schema = await getSchemaPda(credential);
+      const credential = await this.sasService.getCredentialPda(admin.address);
+      const schema = await this.sasService.getSchemaPda(credential);
 
-      const attestation = await getAttestationPda(credential, schema, payer);
+      const attestation = await this.sasService.getAttestationPda(
+        credential,
+        schema,
+        payer,
+      );
 
       const data = [score];
       const expiry = 1750428253000;
 
-      const tx = await getCreateAttestationTransaction({
-        payer,
-        authority: admin,
-        credential,
-        schema,
-        attestation,
-        nonce: payer,
-        data,
-        expiry,
-      })
+      const tx = await this.sasService
+        .getCreateAttestationTransaction({
+          payer,
+          authority: admin,
+          credential,
+          schema,
+          attestation,
+          nonce: payer,
+          data,
+          expiry,
+        })
         .useV0()
         // .setFeePayer(createNoopSigner(publicKey(payer)))
         .setBlockhash(await umi.rpc.getLatestBlockhash())
@@ -113,9 +114,11 @@ export class AttestationService {
     try {
       const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
       const admin = await this.getAdminSigner();
-      const credentialPda = await getCredentialPda(admin.address);
+      const credentialPda = await this.sasService.getCredentialPda(
+        admin.address,
+      );
       const credential = await fetchCredential(rpc, credentialPda);
-      return credential.address;
+      return { address: credential.address };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
@@ -125,10 +128,12 @@ export class AttestationService {
     try {
       const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
       const admin = await this.getAdminSigner();
-      const credentialPda = await getCredentialPda(admin.address);
-      const schemaPda = await getSchemaPda(credentialPda);
+      const credentialPda = await this.sasService.getCredentialPda(
+        admin.address,
+      );
+      const schemaPda = await this.sasService.getSchemaPda(credentialPda);
       const schema = await fetchSchema(rpc, schemaPda);
-      return schema.address;
+      return { address: schema.address };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
@@ -138,19 +143,18 @@ export class AttestationService {
     try {
       const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
       const admin = await this.getAdminSigner();
-      const credentialPda = await getCredentialPda(admin.address);
-      const schemaPda = await getSchemaPda(credentialPda);
-      const attestationPda = await getAttestationPda(
+      const credentialPda = await this.sasService.getCredentialPda(
+        admin.address,
+      );
+      const schemaPda = await this.sasService.getSchemaPda(credentialPda);
+      const attestationPda = await this.sasService.getAttestationPda(
         credentialPda,
         schemaPda,
         address,
       );
       const attestation = await fetchAttestation(rpc, attestationPda);
-      return {
-        attestation: attestation.address,
-      };
+      return { address: attestation.address };
     } catch (error) {
-      console.error(error);
       throw new BadRequestException((error as Error).message);
     }
   }

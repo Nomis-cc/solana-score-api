@@ -11,20 +11,17 @@ export class CollectionController {
   constructor(private readonly collectionService: CollectionService) {}
 
   @Get(':address')
-  async get(@Param('address') address: string) {
-    const collection = await this.collectionService.get(address);
-    return { data: collection };
+  get(@Param('address') address: string) {
+    return this.collectionService.get(address);
   }
 
   @Post('')
-  async create(@Body() body: CollectionDto) {
-    const collection = await this.collectionService.upsert(null, body);
-    return { data: collection };
+  create(@Body() body: CollectionDto) {
+    return this.collectionService.upsert(null, body);
   }
 
   @Post(':address')
-  async update(@Param('address') address: string, @Body() body: CollectionDto) {
-    const collection = await this.collectionService.upsert(address, body);
-    return { data: collection };
+  update(@Param('address') address: string, @Body() body: CollectionDto) {
+    return this.collectionService.upsert(address, body);
   }
 }

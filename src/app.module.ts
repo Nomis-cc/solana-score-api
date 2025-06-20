@@ -8,6 +8,7 @@ import { CollectionService } from './services/collection.service';
 import { AssetService } from './services/asset.service';
 import { AttestationController } from './controllers/attestation.controller';
 import { AttestationService } from './services/attestation.service';
+import { SasService } from './services/sas.service';
 
 @Module({
   imports: [
@@ -21,6 +22,12 @@ import { AttestationService } from './services/attestation.service';
     }),
   ],
   controllers: [CollectionController, AssetController, AttestationController],
-  providers: [CollectionService, AssetService, AttestationService, UmiService],
+  providers: [
+    CollectionService,
+    AssetService,
+    AttestationService,
+    UmiService,
+    SasService,
+  ],
 })
 export class AppModule {}

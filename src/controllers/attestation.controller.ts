@@ -1,46 +1,42 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { AttestationService } from '../services/attestation.service';
 import { CreateAttestationDto } from '../dtos/attestation.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller({
   path: 'attestation',
 })
+@ApiBearerAuth()
 export class AttestationController {
   constructor(private readonly attestationService: AttestationService) {}
 
   @Get('credential')
-  async getCredential() {
-    const credential = await this.attestationService.getCredential();
-    return { data: { credential } };
-  }
-
-  @Post('credential')
-  async createCredential() {
-    const credential = await this.attestationService.createCredential();
-    return { data: { credential } };
+  getCredential() {
+    return this.attestationService.getCredential();
   }
 
   @Get('schema')
-  async getSchema() {
-    const schema = await this.attestationService.getSchema();
-    return { data: { schema } };
+  getSchema() {
+    return this.attestationService.getSchema();
   }
 
   @Get(':address')
-  async getAttestation(@Param('address') address: string) {
-    const schema = await this.attestationService.getAttestation(address);
-    return { data: { schema } };
+  getAttestation(@Param('address') address: string) {
+    return this.attestationService.getAttestation(address);
+  }
+
+  @Post('credential')
+  createCredential() {
+    return this.attestationService.createCredential();
   }
 
   @Post('schema')
-  async createSchema() {
-    const schema = await this.attestationService.createSchema();
-    return { data: { schema } };
+  createSchema() {
+    return this.attestationService.createSchema();
   }
 
   @Post('sign')
-  async sign(@Body() body: CreateAttestationDto) {
-    const transaction = await this.attestationService.createAttestation(body);
-    return { data: transaction };
+  sign(@Body() body: CreateAttestationDto) {
+    return this.attestationService.createAttestation(body);
   }
 }
