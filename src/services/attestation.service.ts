@@ -1,26 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UmiService } from './umi.service';
 import { ConfigService } from '@nestjs/config';
-import {
-  CreateCredentialInstruction,
-  deriveCredentialPda,
-  getCreateCredentialInstruction,
-  fetchCredential,
-} from 'sas-lib';
-import {
-  createKeyPairSignerFromBytes,
-  Address,
-  createSolanaRpc,
-} from '@solana/kit';
-import {
-  publicKey,
-  transactionBuilder,
-  TransactionBuilderItemsInput,
-} from '@metaplex-foundation/umi';
-import { SignDto } from '../dtos/attestation.dto';
-import { base58 } from '@metaplex-foundation/umi/serializers';
+import { fetchCredential, fetchSchema } from 'sas-lib';
+import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
 
-const NAME = 'Nomis Attestation';
+import {
+  getSchemaPda,
+  getCredentialPda,
+  getAttestationPda,
+  getCreateSchemaTransaction,
+  getCreateCredentialTransaction,
+  getCreateAttestationTransaction,
+} from '../tools/attestation';
+import { CreateAttestationDto } from '../dtos/attestation.dto';
 
 @Injectable()
 export class AttestationService {
@@ -33,167 +25,125 @@ export class AttestationService {
     this.adminPrivateKey = this.configService.get<string>('ADMIN_PRIVATE_KEY');
   }
 
-  async createSchema() {
-    const credential = await this.createCredential();
-
-    // const transaction = getCreateSchemaInstruction({
-    //   payer: payerSigner,
-    //   authority: authoritySigner,
-    //   credential: credentialPublicKey,
-    //   schema: schemaPublicKey,
-    //   systemProgram: systemProgramPublicKey,
-    //   name: "Identity Verification",
-    //   description: "Schema for verifying user identity information",
-    //   layout: schemaLayoutBytes,
-    //   fieldNames: ["fullName", "dateOfBirth", "nationality"]
-    // });
-
-    return {
-      result: true,
-      credential,
-    };
-  }
-
-  async sign(body: SignDto) {
-    // const tx = getCreateAttestationInstruction({
-    //   payer: payerSigner,
-    //   authority: authoritySigner,
-    //   credential: credentialPublicKey,
-    //   schema: schemaPublicKey,
-    //   attestation: attestationPublicKey,
-    //   systemProgram: systemProgramPublicKey,
-    //   nonce: noncePublicKey,
-    //   data: attestationData,
-    //   expiry: expiryTimestamp,
-    // });
-
-    console.log(body);
-
-    const umi = this.umiService.getUmi(this.adminPrivateKey);
-
-    const tx = await transactionBuilder()
-      // .add()
-      .useV0()
-      // .setFeePayer(createNoopSigner(userPublicKey))
-      .setBlockhash(await umi.rpc.getLatestBlockhash())
-      .buildAndSign(umi);
-
-    const transaction = this.umiService.getBase64EncodedTransaction(tx);
-
-    return {
-      transaction,
-    };
-  }
-
-  async test() {
-    try {
-      const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
-
-      const admin = await createKeyPairSignerFromBytes(
-        Uint8Array.from(JSON.parse(this.adminPrivateKey) as number[]),
-      );
-
-      const [credentialPda] = await deriveCredentialPda({
-        authority: base58.serialize(admin.address) as unknown as Address,
-        name: NAME,
-      });
-
-      const credential = await fetchCredential(rpc, credentialPda);
-      console.log('Credential', credentialPda, credential);
-    } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error);
-    }
-  }
-
   async createCredential() {
     try {
       const umi = this.umiService.getUmi(this.adminPrivateKey);
 
-      const admin = await createKeyPairSignerFromBytes(
-        Uint8Array.from(JSON.parse(this.adminPrivateKey) as number[]),
-      );
+      const admin = await this.getAdminSigner();
 
-      const [credential] = await deriveCredentialPda({
-        authority: base58.serialize(admin.address) as unknown as Address,
-        name: NAME,
-      });
+      const credential = await getCredentialPda(admin.address);
 
-      const ix = getCreateCredentialInstruction({
+      const createCredentialTx = await getCreateCredentialTransaction({
         authority: admin,
         credential,
-        name: NAME,
         payer: admin,
         signers: [admin.address],
-      });
+      }).buildAndSign(umi);
+      // .sendAndConfirm(umi);
 
-      const tx = await transactionBuilder()
-        .add(this.transformInstructionObject(ix as CreateCredentialInstruction))
-        .sendAndConfirm(umi);
-
-      console.log(tx);
-
-      // .buildAndSign(umi);
-      //
-      // console.log(this.umiService.getBase64EncodedTransaction(tx));
+      return {
+        result: true,
+        tx: this.umiService.getBase64EncodedTransaction(createCredentialTx),
+      };
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error);
+      throw new BadRequestException((error as Error).message);
     }
   }
 
-  private transformInstructionObject(
-    obj: CreateCredentialInstruction<
-      Address<'22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG'>,
-      string,
-      string,
-      string,
-      string,
-      []
-    >,
-  ): TransactionBuilderItemsInput {
-    const keys = obj.accounts.map((acc) => {
-      const pubkey = publicKey(acc.address);
+  async createSchema() {
+    try {
+      const umi = this.umiService.getUmi(this.adminPrivateKey);
 
-      let isSigner = false;
-      let isWritable = false;
+      const admin = await this.getAdminSigner();
 
-      switch (Number(acc.role)) {
-        case 0:
-          isSigner = false;
-          isWritable = false;
-          break;
-        case 1:
-          isSigner = false;
-          isWritable = true;
-          break;
-        case 2:
-          isSigner = true;
-          isWritable = false;
-          break;
-        case 3:
-          isSigner = true;
-          isWritable = true;
-          break;
-        default:
-          throw new Error(`Unknown role: ${acc.role}`);
-      }
+      const credential = await getCredentialPda(admin.address);
+      const schema = await getSchemaPda(credential);
+
+      const createSchemaTx = await getCreateSchemaTransaction({
+        payer: admin,
+        authority: admin,
+        credential,
+        schema,
+      }).buildAndSign(umi);
+      // .sendAndConfirm(umi);
 
       return {
-        pubkey,
-        isSigner,
-        isWritable,
+        result: true,
+        tx: this.umiService.getBase64EncodedTransaction(createSchemaTx),
       };
-    });
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
 
-    return {
-      instruction: {
-        programId: publicKey(obj.programAddress),
-        keys,
-        data: Buffer.from(obj.data),
-      },
-      signers: [],
-      bytesCreatedOnChain: 0,
-    };
+  async createAttestation(props: CreateAttestationDto) {
+    try {
+      const { address: payer, score } = props;
+
+      const umi = this.umiService.getUmi(this.adminPrivateKey);
+
+      const admin = await this.getAdminSigner();
+
+      const credential = await getCredentialPda(admin.address);
+      const schema = await getSchemaPda(credential);
+
+      const attestation = await getAttestationPda(credential, schema, payer);
+
+      const data = [score];
+      const expiry = 1750428253000;
+
+      const tx = await getCreateAttestationTransaction({
+        payer,
+        authority: admin,
+        credential,
+        schema,
+        attestation,
+        nonce: payer,
+        data,
+        expiry,
+      })
+        .useV0()
+        // .setFeePayer(createNoopSigner(publicKey(payer)))
+        .setBlockhash(await umi.rpc.getLatestBlockhash())
+        .buildAndSign(umi);
+
+      return {
+        transaction: this.umiService.getBase64EncodedTransaction(tx),
+      };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+
+  async getCredential() {
+    try {
+      const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
+      const admin = await this.getAdminSigner();
+      const credentialPda = await getCredentialPda(admin.address);
+      const credential = await fetchCredential(rpc, credentialPda);
+      return credential.address;
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+
+  async getSchema() {
+    try {
+      const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
+      const admin = await this.getAdminSigner();
+      const credentialPda = await getCredentialPda(admin.address);
+      const schemaPda = await getSchemaPda(credentialPda);
+      const schema = await fetchSchema(rpc, schemaPda);
+      return schema.address;
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+
+  private async getAdminSigner() {
+    return await createKeyPairSignerFromBytes(
+      Uint8Array.from(JSON.parse(this.adminPrivateKey) as number[]),
+    );
   }
 }

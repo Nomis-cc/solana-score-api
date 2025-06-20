@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AttestationService } from '../services/attestation.service';
-import { SignDto } from '../dtos/attestation.dto';
+import { CreateAttestationDto } from '../dtos/attestation.dto';
 
 @Controller({
   path: 'attestation',
@@ -8,18 +8,33 @@ import { SignDto } from '../dtos/attestation.dto';
 export class AttestationController {
   constructor(private readonly attestationService: AttestationService) {}
 
-  @Post('schema')
-  createSchema() {
-    return this.attestationService.createSchema();
+  @Get('credential')
+  async getCredential() {
+    const credential = await this.attestationService.getCredential();
+    return { data: { credential } };
   }
 
-  @Get('test')
-  test() {
-    return this.attestationService.test();
+  @Post('credential')
+  async createCredential() {
+    const credential = await this.attestationService.createCredential();
+    return { data: { credential } };
+  }
+
+  @Get('schema')
+  async getSchema() {
+    const schema = await this.attestationService.getSchema();
+    return { data: { schema } };
+  }
+
+  @Post('schema')
+  async createSchema() {
+    const schema = await this.attestationService.createSchema();
+    return { data: { schema } };
   }
 
   @Post('sign')
-  sign(@Body() body: SignDto) {
-    return this.attestationService.sign(body);
+  async sign(@Body() body: CreateAttestationDto) {
+    const transaction = await this.attestationService.createAttestation(body);
+    return { data: transaction };
   }
 }

@@ -1,6 +1,6 @@
 import { IsNotEmpty, Max, Min } from 'class-validator';
 
-export class SignDto {
+export class CreateAttestationDto {
   @IsNotEmpty()
   address: string;
 
