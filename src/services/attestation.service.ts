@@ -4,8 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import { fetchAttestation, fetchCredential, fetchSchema } from 'sas-lib';
 import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
 
-import { CreateAttestationDto } from '../dtos/attestation.dto';
 import { SasService } from './sas.service';
+import { createNoopSigner, publicKey } from '@metaplex-foundation/umi';
+import { AssetService } from './asset.service';
+import { CreateAttestationDto } from '../dtos/attestation.dto';
 
 @Injectable()
 export class AttestationService {
@@ -15,6 +17,7 @@ export class AttestationService {
     private configService: ConfigService,
     private umiService: UmiService,
     private sasService: SasService,
+    private assetService: AssetService,
   ) {
     this.adminPrivateKey = this.configService.get<string>('ADMIN_PRIVATE_KEY');
   }
@@ -35,6 +38,7 @@ export class AttestationService {
         .sendAndConfirm(umi);
 
       return {
+        // transaction: this.umiService.getBase64EncodedTransaction(tx),
         transactionHash: tx.signature,
       };
     } catch (error) {
@@ -56,9 +60,11 @@ export class AttestationService {
           credential,
           schema,
         })
+        // .buildAndSign(umi);
         .sendAndConfirm(umi);
 
       return {
+        // transaction: this.umiService.getBase64EncodedTransaction(tx),
         transactionHash: tx.signature,
       };
     } catch (error) {
@@ -66,9 +72,18 @@ export class AttestationService {
     }
   }
 
-  async createAttestation(props: CreateAttestationDto) {
+  async createAttestation(body: CreateAttestationDto) {
     try {
-      const { address: payer, score } = props;
+      const { collection: collectionPublicKey, address: userPublicKey } = body;
+
+      const asset = await this.assetService.get(
+        userPublicKey,
+        collectionPublicKey,
+      );
+
+      const score =
+        +asset.attributes.attributeList.find((i) => i.key === 'score')?.value ||
+        0;
 
       const umi = this.umiService.getUmi(this.adminPrivateKey);
 
@@ -80,25 +95,25 @@ export class AttestationService {
       const attestation = await this.sasService.getAttestationPda(
         credential,
         schema,
-        payer,
+        userPublicKey,
       );
 
-      const data = [score];
-      const expiry = 1750428253000;
+      const payerNoopSigner = createNoopSigner(publicKey(userPublicKey));
 
       const tx = await this.sasService
         .getCreateAttestationTransaction({
-          payer,
+          payer: userPublicKey,
           authority: admin,
           credential,
           schema,
           attestation,
-          nonce: payer,
-          data,
-          expiry,
+          nonce: userPublicKey,
+          data: [score],
+          expiry: 1750428253000,
+          signers: [umi.payer, payerNoopSigner],
         })
         .useV0()
-        // .setFeePayer(createNoopSigner(publicKey(payer)))
+        .setFeePayer(payerNoopSigner)
         .setBlockhash(await umi.rpc.getLatestBlockhash())
         .buildAndSign(umi);
 

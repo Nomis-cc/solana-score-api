@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PublicKey } from '@solana/web3.js';
+
 import { address, Address, createNoopSigner } from '@solana/kit';
 
 import {
   publicKey,
-  transactionBuilder,
-  TransactionBuilderItemsInput,
-  // Signer,
-  // createNoopSigner as umiCreateNoopSigner,
+  Signer,
+  TransactionBuilder,
 } from '@metaplex-foundation/umi';
 
 import {
@@ -60,13 +59,12 @@ export class SasService {
   }
 
   getCreateCredentialTransaction(props: Omit<CreateCredentialInput, 'name'>) {
-    const ix = this.transformInstructionObject(
+    return this.transformUmiIx(
       getCreateCredentialInstruction({
         ...props,
         name: CREDENTIAL_NAME,
       }),
     );
-    return transactionBuilder().add(ix);
   }
 
   getCreateSchemaTransaction(
@@ -75,7 +73,7 @@ export class SasService {
       'name' | 'description' | 'layout' | 'fieldNames'
     >,
   ) {
-    const ix = this.transformInstructionObject(
+    return this.transformUmiIx(
       getCreateSchemaInstruction({
         ...props,
         name: SCHEMA_NAME,
@@ -84,7 +82,6 @@ export class SasService {
         fieldNames: SCHEMA_FIELD_NAMES,
       }),
     );
-    return transactionBuilder().add(ix);
   }
 
   getCreateAttestationTransaction(
@@ -92,25 +89,26 @@ export class SasService {
       payer: string;
       nonce: string;
       data: number[];
+      signers: Signer[];
     },
   ) {
     const nonce = address(props.payer);
     const payer = createNoopSigner(nonce);
     const data = new Uint8Array(new Uint16Array(props.data).buffer);
+    const { signers } = props;
 
-    const ix = getCreateAttestationInstruction({
-      ...props,
-      nonce,
-      payer,
-      data,
-    });
-
-    // console.dir(ix, { depth: null, colors: true });
-
-    return transactionBuilder().add(this.transformInstructionObject(ix));
+    return this.transformUmiIx(
+      getCreateAttestationInstruction({
+        ...props,
+        nonce,
+        payer,
+        data,
+      }),
+      signers,
+    );
   }
 
-  transformInstructionObject(
+  transformUmiIx(
     obj:
       | CreateCredentialInstruction<Address, string, string, string, string, []>
       | CreateSchemaInstruction<
@@ -132,7 +130,8 @@ export class SasService {
           string,
           []
         >,
-  ): TransactionBuilderItemsInput {
+    signers: Signer[] = [],
+  ): TransactionBuilder {
     const keys = obj.accounts.map((acc) => {
       const pubkey = publicKey(acc.address);
 
@@ -167,19 +166,14 @@ export class SasService {
       };
     });
 
-    // const signers: Signer[] = (obj.accounts as unknown as { signer?: Signer }[])
-    //   .filter((acc) => acc.signer)
-    //   .map((acc) => umiCreateNoopSigner(acc.signer.publicKey));
-
-    return {
+    return new TransactionBuilder().add({
       instruction: {
         programId: publicKey(obj.programAddress),
         keys,
         data: Buffer.from(obj.data),
       },
-      signers: [],
-      // signers,
+      signers,
       bytesCreatedOnChain: 0,
-    };
+    });
   }
 }
