@@ -76,14 +76,16 @@ export class AttestationService {
     try {
       const { collection: collectionPublicKey, address: userPublicKey } = body;
 
-      const asset = await this.assetService.get(
-        userPublicKey,
-        collectionPublicKey,
-      );
+      // const asset = await this.assetService.get(
+      //   userPublicKey,
+      //   collectionPublicKey,
+      // );
+      //
+      // const score =
+      //   +asset.attributes.attributeList.find((i) => i.key === 'score')?.value ||
+      //   0;
 
-      const score =
-        +asset.attributes.attributeList.find((i) => i.key === 'score')?.value ||
-        0;
+      const score = 1000;
 
       const umi = this.umiService.getUmi(this.adminPrivateKey);
 
