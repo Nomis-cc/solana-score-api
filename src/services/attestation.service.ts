@@ -28,7 +28,7 @@ export class AttestationService {
       const admin = await this.getAdminSigner();
       const credential = await this.sasService.getCredentialPda(admin.address);
 
-      const tx = await this.sasService
+      await this.sasService
         .getCreateCredentialTransaction({
           authority: admin,
           credential,
@@ -37,10 +37,7 @@ export class AttestationService {
         })
         .sendAndConfirm(umi);
 
-      return {
-        // transaction: this.umiService.getBase64EncodedTransaction(tx),
-        transactionHash: tx.signature,
-      };
+      return { address: credential };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }
@@ -53,19 +50,17 @@ export class AttestationService {
       const credential = await this.sasService.getCredentialPda(admin.address);
       const schema = await this.sasService.getSchemaPda(credential);
 
-      const tx = await this.sasService
+      await this.sasService
         .getCreateSchemaTransaction({
           payer: admin,
           authority: admin,
           credential,
           schema,
         })
-        // .buildAndSign(umi);
         .sendAndConfirm(umi);
 
       return {
-        // transaction: this.umiService.getBase64EncodedTransaction(tx),
-        transactionHash: tx.signature,
+        address: schema,
       };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
