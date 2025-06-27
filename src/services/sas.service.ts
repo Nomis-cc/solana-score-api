@@ -24,9 +24,9 @@ import {
   getCreateAttestationInstruction,
 } from 'sas-lib';
 
-const CREDENTIAL_NAME = 'Nomis Attestation';
+const CREDENTIAL_NAME = 'Nomis Score Attestation';
 const SCHEMA_NAME = CREDENTIAL_NAME;
-const SCHEMA_DESCRIPTION = 'Schema for verifying user identity information';
+const SCHEMA_DESCRIPTION = CREDENTIAL_NAME;
 const SCHEMA_LAYOUT = new Uint8Array([1]);
 const SCHEMA_FIELD_NAMES = ['score'];
 
