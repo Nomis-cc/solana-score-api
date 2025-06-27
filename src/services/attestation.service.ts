@@ -1,13 +1,25 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UmiService } from './umi.service';
 import { ConfigService } from '@nestjs/config';
-import { fetchAttestation, fetchCredential, fetchSchema } from 'sas-lib';
-import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
+import {
+  fetchAttestation,
+  fetchCredential,
+  fetchSchema,
+  deserializeAttestationData,
+  Schema,
+} from 'sas-lib';
+import {
+  Account,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+} from '@solana/kit';
 
 import { SasService } from './sas.service';
 import { createNoopSigner, publicKey } from '@metaplex-foundation/umi';
 import { AssetService } from './asset.service';
 import { CreateAttestationDto } from '../dtos/attestation.dto';
+
+let cachedSchema: Account<Schema>;
 
 @Injectable()
 export class AttestationService {
@@ -104,7 +116,7 @@ export class AttestationService {
           attestation,
           nonce: userPublicKey,
           data: [score],
-          expiry: 1750428253000,
+          expiry: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
           signers: [umi.payer, payerNoopSigner],
         })
         .useV0()
@@ -153,6 +165,7 @@ export class AttestationService {
     try {
       const rpc = createSolanaRpc(this.configService.get<string>('RPC'));
       const admin = await this.getAdminSigner();
+
       const credentialPda = await this.sasService.getCredentialPda(
         admin.address,
       );
@@ -162,8 +175,32 @@ export class AttestationService {
         schemaPda,
         address,
       );
+
       const attestation = await fetchAttestation(rpc, attestationPda);
-      return { address: attestation.address };
+
+      if (!cachedSchema) {
+        cachedSchema = await fetchSchema(rpc, schemaPda);
+      }
+
+      const data: { score: number } = deserializeAttestationData(
+        cachedSchema.data,
+        attestation.data.data as Uint8Array<ArrayBufferLike>,
+      );
+
+      const yearSeconds = 365 * 24 * 60 * 60;
+
+      let expiry = Number(attestation.data.expiry);
+
+      if (expiry > 9999999999) {
+        expiry = Math.floor(expiry / 1000);
+      }
+
+      return {
+        address: attestation.address,
+        score: data.score,
+        expiresAt: expiry,
+        createdAt: expiry - yearSeconds,
+      };
     } catch (error) {
       throw new BadRequestException((error as Error).message);
     }

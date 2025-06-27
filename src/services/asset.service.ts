@@ -43,7 +43,7 @@ export class AssetService {
       const umi = this.umiService.getUmi();
 
       const assets = await fetchAssetsByOwner(umi, publicKey(userPublicKey), {
-        skipDerivePlugins: false,
+        skipDerivePlugins: true,
       });
 
       return assets.find(
